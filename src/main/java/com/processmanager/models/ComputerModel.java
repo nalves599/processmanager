@@ -1,6 +1,8 @@
 package com.processmanager.models;
 
+import com.processmanager.entities.Computer;
 import com.processmanager.enums.EnumComputerStatus;
+import com.processmanager.enums.EnumProcessStatus;
 
 import java.util.Date;
 import java.util.List;
@@ -18,6 +20,18 @@ public class ComputerModel {
     private Date lastTimeAlive;
     private EnumComputerStatus status;
     private List<Process> processes;
+
+
+
+    public ComputerModel(String ip, int port, String protocol, int timeout) {
+        this.master = false;
+        this.ip = ip;
+        this.port = port;
+        this.protocol = protocol;
+        this.timeout = timeout;
+        this.status = EnumComputerStatus.ACTIVE;
+    }
+
 
     public Long getComputerId() {
         return computerId;

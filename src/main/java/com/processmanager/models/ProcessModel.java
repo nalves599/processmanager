@@ -14,6 +14,14 @@ public class ProcessModel {
     private Computer computer;
     private Command command;
 
+    public ProcessModel(String name, int pid, Date startedAt, Computer computer, Command command) {
+        this.name = name;
+        this.pid = pid;
+        this.startedAt = startedAt;
+        this.computer = computer;
+        this.command = command;
+    }
+
     public Long getProcessId() {
         return processId;
     }

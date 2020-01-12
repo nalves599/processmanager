@@ -17,10 +17,10 @@ public class Computer {
     private Long computerId;
 
     @Column(name = "ACTIVE")
-    private boolean active;
+    private boolean active = true;
 
     @Column(name = "MASTER")
-    private boolean master;
+    private boolean master = false;
 
     @Column(name = "IP", nullable = false)
     private String ip;
@@ -37,10 +37,10 @@ public class Computer {
 
     @Column(name = "TIMEOUT", nullable = false)
     @Min(value = 5)
-    private int timeout;
+    private int timeout = 5;
 
     @Column(name = "LAST_TIME_ALIVE")
-    private Date lastTimeAlive;
+    private Date lastTimeAlive = new Date(System.currentTimeMillis());
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false)
@@ -49,9 +49,6 @@ public class Computer {
     @OneToMany(targetEntity = Process.class, mappedBy = "computer",
             fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Process> processes;
-
-    public Computer() {
-    }
 
     public Long getComputerId() {
         return computerId;

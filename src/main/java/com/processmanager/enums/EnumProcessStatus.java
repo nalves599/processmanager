@@ -2,7 +2,7 @@ package com.processmanager.enums;
 
 public enum EnumProcessStatus {
 
-    RUNNING("-1"),
+    RUNNING("1"),
     STOPPED("0");
 
     private final String processStatus;
