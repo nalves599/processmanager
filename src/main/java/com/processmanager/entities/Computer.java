@@ -4,6 +4,7 @@ import com.processmanager.enums.EnumComputerStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
@@ -31,23 +32,23 @@ public class Computer {
     @Column(name = "PROTOCOL")
     private String protocol;
 
-    @Column(name = "PRIORITY", nullable = false)
-    @Min(value = 0)
+    @Column(name = "PRIORITY", nullable = false, unique = false)
+    @Min(value = 1)
     private int priority;
 
-    @Column(name = "TIMEOUT", nullable = false)
-    @Min(value = 5)
-    private int timeout = 5;
+//    @Column(name = "TIMEOUT", nullable = false)
+//    @Min(value = 5)
+//    private int timeout = 5;
 
     @Column(name = "LAST_TIME_ALIVE")
-    private Date lastTimeAlive = new Date(System.currentTimeMillis());
+    private Timestamp lastTimeAlive = new Timestamp(System.currentTimeMillis());
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false)
-    private EnumComputerStatus status;
+    private EnumComputerStatus status = EnumComputerStatus.ACTIVE;
 
     @OneToMany(targetEntity = Process.class, mappedBy = "computer",
-            fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+            fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Process> processes;
 
     public Long getComputerId() {
@@ -106,19 +107,19 @@ public class Computer {
         this.priority = priority;
     }
 
-    public int getTimeout() {
-        return timeout;
-    }
+//    public int getTimeout() {
+//        return timeout;
+//    }
+//
+//    public void setTimeout(int timeout) {
+//        this.timeout = timeout;
+//    }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    public Date getLastTimeAlive() {
+    public Timestamp getLastTimeAlive() {
         return lastTimeAlive;
     }
 
-    public void setLastTimeAlive(Date lastTimeAlive) {
+    public void setLastTimeAlive(Timestamp lastTimeAlive) {
         this.lastTimeAlive = lastTimeAlive;
     }
 

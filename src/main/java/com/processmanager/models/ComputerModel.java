@@ -1,10 +1,8 @@
 package com.processmanager.models;
 
-import com.processmanager.entities.Computer;
 import com.processmanager.enums.EnumComputerStatus;
-import com.processmanager.enums.EnumProcessStatus;
 
-import java.util.Date;
+import java.sql.Timestamp;
 import java.util.List;
 
 public class ComputerModel {
@@ -16,21 +14,10 @@ public class ComputerModel {
     private int port;
     private String protocol;
     private int priority;
-    private int timeout;
-    private Date lastTimeAlive;
+    //    private int timeout;
+    private Timestamp lastTimeAlive;
     private EnumComputerStatus status;
     private List<Process> processes;
-
-
-
-    public ComputerModel(String ip, int port, String protocol, int timeout) {
-        this.master = false;
-        this.ip = ip;
-        this.port = port;
-        this.protocol = protocol;
-        this.timeout = timeout;
-        this.status = EnumComputerStatus.ACTIVE;
-    }
 
 
     public Long getComputerId() {
@@ -51,10 +38,6 @@ public class ComputerModel {
 
     public boolean isMaster() {
         return master;
-    }
-
-    public void setMaster(boolean master) {
-        this.master = master;
     }
 
     public String getIp() {
@@ -89,19 +72,19 @@ public class ComputerModel {
         this.priority = priority;
     }
 
-    public int getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    public Date getLastTimeAlive() {
+    //    public int getTimeout() {
+//        return timeout;
+//    }
+//
+//    public void setTimeout(int timeout) {
+//        this.timeout = timeout;
+//    }
+//
+    public Timestamp getLastTimeAlive() {
         return lastTimeAlive;
     }
 
-    public void setLastTimeAlive(Date lastTimeAlive) {
+    public void setLastTimeAlive(Timestamp lastTimeAlive) {
         this.lastTimeAlive = lastTimeAlive;
     }
 

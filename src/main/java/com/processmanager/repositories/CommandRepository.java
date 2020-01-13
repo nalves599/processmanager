@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface CommandRepository extends JpaRepository<Command, Long> {
     List<Command> findAllByActiveTrue();
+
+
 }
