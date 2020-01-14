@@ -19,7 +19,7 @@ public class ComputerController {
 
     @GetMapping
     public GenericResponseModel getAll(){
-        return GenericResponseUtil.ok(computerService.getAll());
+        return GenericResponseUtil.ok(computerService.getAllActive());
     }
 
     @GetMapping("/{id}")
@@ -32,9 +32,7 @@ public class ComputerController {
     public GenericResponseModel create(@RequestBody ComputerModelRequest computerModelRequest){
         try {
             ComputerModel computerModel = computerService.add(computerModelRequest);
-            if(computerModel.isMaster()) {
-                // TODO : Run Commands
-            }
+
             return GenericResponseUtil.ok(computerModel);
         } catch (Exception e) {
             return GenericResponseUtil.setError(HttpStatus.NOT_ACCEPTABLE.value(), e.getMessage());

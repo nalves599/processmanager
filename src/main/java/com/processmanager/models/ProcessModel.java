@@ -2,6 +2,7 @@ package com.processmanager.models;
 
 import com.processmanager.entities.Command;
 import com.processmanager.entities.Computer;
+import com.processmanager.enums.EnumProcessStatus;
 
 import java.util.Date;
 
@@ -10,17 +11,11 @@ public class ProcessModel {
     private boolean active;
     private String name;
     private int pid;
+    private EnumProcessStatus status;
     private Date startedAt;
     private Computer computer;
     private Command command;
 
-    public ProcessModel(String name, int pid, Date startedAt, Computer computer, Command command) {
-        this.name = name;
-        this.pid = pid;
-        this.startedAt = startedAt;
-        this.computer = computer;
-        this.command = command;
-    }
 
     public Long getProcessId() {
         return processId;
@@ -76,5 +71,13 @@ public class ProcessModel {
 
     public void setCommand(Command command) {
         this.command = command;
+    }
+
+    public EnumProcessStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(EnumProcessStatus status) {
+        this.status = status;
     }
 }

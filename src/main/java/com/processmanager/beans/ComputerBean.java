@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 @Component
 public class ComputerBean {
 
@@ -16,15 +19,21 @@ public class ComputerBean {
     @Autowired
     private ComputerService computerService;
 
-    @Bean
+//    @Bean
     public void initComputer(){
-        ComputerModelRequest computerModelRequest = new ComputerModelRequest();
-        computerModelRequest.setIp("localhost"); // TODO : Change IP
-        computerModelRequest.setPort(serverPort);
-        computerModelRequest.setProtocol("http");
+        ComputerModelRequest computerModelRequest = null;
+        try {
+            computerModelRequest = new ComputerModelRequest();
+            computerModelRequest.setIp(InetAddress.getLocalHost().getHostName());
+            computerModelRequest.setPort(serverPort);
+            computerModelRequest.setProtocol("http");
+        } catch (UnknownHostException e) {
+            System.exit(0);
+        }
 
         try {
             computerService.add(computerModelRequest);
+            // TODO : Validate Processes
         } catch (Exception e) {
             System.err.println("Failed to Initialize");
         }

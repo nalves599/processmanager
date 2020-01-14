@@ -2,8 +2,8 @@ package com.processmanager.enums;
 
 public enum EnumComputerStatus {
 
-    WARNING("-1"),
-    ERROR("0"),
+    SHUTDOWN("-1"),
+    WARNING("0"),
     ACTIVE("1");
 
     private final String computerStatus;

@@ -1,5 +1,7 @@
 package com.processmanager.entities;
 
+import com.processmanager.enums.EnumProcessStatus;
+
 import javax.persistence.*;
 import java.util.Date;
 
@@ -15,14 +17,18 @@ public class Process {
     @Column(name = "ACTIVE")
     private boolean active;
 
-    @Column(name = "NAME", nullable = false)
+    @Column(name = "NAME")
     private String name;
 
     @Column(name = "PID", nullable = false)
     private int pid;
 
-    @Column(name = "STARTED_AT", nullable = false)
+    @Column(name = "STARTED_AT")
     private Date startedAt;
+
+    @Column(name = "STATUS")
+    @Enumerated(EnumType.STRING)
+    private EnumProcessStatus status = EnumProcessStatus.RUNNING;
 
     @ManyToOne(targetEntity = Computer.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "COMPUTER", referencedColumnName = "COMPUTER_ID")
@@ -89,6 +95,14 @@ public class Process {
 
     public void setCommand(Command command) {
         this.command = command;
+    }
+
+    public EnumProcessStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(EnumProcessStatus status) {
+        this.status = status;
     }
 }
 

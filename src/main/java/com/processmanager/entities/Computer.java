@@ -32,8 +32,7 @@ public class Computer {
     @Column(name = "PROTOCOL")
     private String protocol;
 
-    @Column(name = "PRIORITY", nullable = false, unique = false)
-    @Min(value = 1)
+    @Column(name = "PRIORITY", nullable = false)
     private int priority;
 
 //    @Column(name = "TIMEOUT", nullable = false)
