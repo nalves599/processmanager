@@ -46,9 +46,9 @@ public class Computer {
     @Column(name = "STATUS", nullable = false)
     private EnumComputerStatus status = EnumComputerStatus.ACTIVE;
 
-    @OneToMany(targetEntity = Process.class, mappedBy = "computer",
-            fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Process> processes;
+//    @OneToMany(targetEntity = Process.class, mappedBy = "computer",
+//            fetch = FetchType.EAGER)
+//    private List<Process> processes;
 
     public Long getComputerId() {
         return computerId;
@@ -130,11 +130,11 @@ public class Computer {
         this.status = status;
     }
 
-    public List<Process> getProcesses() {
-        return processes;
-    }
-
-    public void setProcesses(List<Process> processes) {
-        this.processes = processes;
-    }
+//    public List<Process> getProcesses() {
+//        return processes;
+//    }
+//
+//    public void setProcesses(List<Process> processes) {
+//        this.processes = processes;
+//    }
 }

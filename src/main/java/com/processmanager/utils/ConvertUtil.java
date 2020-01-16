@@ -17,7 +17,6 @@ public class ConvertUtil {
     public static <T> Object convert(Object entityData, Class<T> model) {
         String jsonStringObject;
         try {
-
             jsonStringObject = new ObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS")).writeValueAsString(entityData);
         } catch (JsonProcessingException e) {
             Log.error("Cannot write Value as String " + entityData.toString());

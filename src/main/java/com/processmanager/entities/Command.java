@@ -19,12 +19,12 @@ public class Command {
     @Column(name = "COMMAND", nullable = false, length = 1000)
     private String command;
 
-    @Column(name = "MAX_PROCESSES", nullable = false)
-    @Min(value = 1)
-    private int maxProcesses;
+    @Column(name = "NAME")
+    private String name;
+
 
     @OneToMany(targetEntity = Process.class, mappedBy = "command",
-            fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+            fetch = FetchType.EAGER)
     private List<Process> processes;
 
     public Command() {
@@ -54,12 +54,12 @@ public class Command {
         this.command = command;
     }
 
-    public int getMaxProcesses() {
-        return maxProcesses;
+    public String getName() {
+        return name;
     }
 
-    public void setMaxProcesses(int maxProcesses) {
-        this.maxProcesses = maxProcesses;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public List<Process> getProcesses() {

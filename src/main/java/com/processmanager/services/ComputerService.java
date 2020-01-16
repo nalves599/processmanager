@@ -1,16 +1,18 @@
 package com.processmanager.services;
 
+import com.processmanager.entities.Command;
 import com.processmanager.entities.Computer;
 import com.processmanager.entities.Process;
 import com.processmanager.enums.EnumComputerStatus;
-import com.processmanager.enums.EnumError;
 import com.processmanager.enums.EnumProcessStatus;
 import com.processmanager.models.ComputerModel;
 import com.processmanager.models.requests.ComputerModelRequest;
+import com.processmanager.repositories.CommandRepository;
 import com.processmanager.repositories.ComputerRepository;
 import com.processmanager.repositories.ProcessRepository;
 import com.processmanager.utils.ComputerUtil;
 import com.processmanager.utils.ConvertUtil;
+import com.processmanager.utils.ReaderThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,14 +20,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 public class ComputerService {
@@ -36,184 +34,218 @@ public class ComputerService {
     @Value("${computer.priority-difference}")
     private int difference;
 
+    @Value("${server.port}")
+    private int serverPort;
+
     @Value("${computer.priority-top}")
     private int topPriority;
 
     @Value("${computer.validate-time}")
     private int validateTime;
 
+    @Value("${command.file-path}")
+    private String commandPath;
+
     private ComputerRepository computerRepository;
     private ProcessRepository processRepository;
+    private CommandRepository commandRepository;
 
     @Autowired
     public ComputerService(ComputerRepository computerRepository,
-                           ProcessRepository processRepository) {
+                           ProcessRepository processRepository,
+                           CommandRepository commandRepository) {
         this.computerRepository = computerRepository;
         this.processRepository = processRepository;
+        this.commandRepository = commandRepository;
+    }
+
+    public ComputerModel run(ComputerModelRequest computerModelRequest) {
+        Computer computer = (Computer) ConvertUtil.convert(computerModelRequest, Computer.class);
+        computer = validateExistence(computer);
+
+        // If Computer Not Exist
+        if (computer.getComputerId() == null) {
+            computer = createComputer(computer);
+        }
+        // Validate My Status
+        computer = validateMyStatus(computer);
+        computer = validateTopConnection(computer);
+
+        return null;
+    }
+
+    public ComputerModel start() {
+        ComputerModelRequest computerModelRequest = null;
+
+        try {
+            computerModelRequest = new ComputerModelRequest();
+            computerModelRequest.setIp(InetAddress.getLocalHost().getHostName());
+            computerModelRequest.setPort(serverPort);
+            computerModelRequest.setProtocol("http");
+
+            return run(computerModelRequest);
+        } catch (UnknownHostException e) {
+            Log.error("Error Getting HostName");
+        }
+
+        return null;
     }
 
     public List<ComputerModel> getAllActive() {
-        List<Computer> computers = computerRepository.findAllByActiveTrueAndStatus(EnumComputerStatus.ACTIVE);
+        List<Computer> computers = computerRepository.findAllByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus.ACTIVE);
         return ConvertUtil.convertList(computers, ComputerModel.class);
     }
 
-    public ComputerModel add(ComputerModelRequest computerModelRequest) throws Exception {
-        if (computerModelRequest.getIp() != null && !computerModelRequest.getIp().isEmpty()) {
-            if (computerModelRequest.getPort() > 0 && computerModelRequest.getPort() < 10000) {
-                if (computerModelRequest.getProtocol() != null && !computerModelRequest.getProtocol().isEmpty()) {
-
-                    Computer computer = (Computer) ConvertUtil.convert(computerModelRequest, Computer.class);
-                    Computer alreadyExist = computerRepository.findComputerByActiveTrueAndIpAndPort(computer.getIp(), computer.getPort());
-                    Computer lastComputer = computerRepository.findFirstByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus.ACTIVE);
-
-                    // If already exist
-                    if (alreadyExist != null && alreadyExist.isMaster()) {
-                        computer = alreadyExist;
-                        ComputerUtil.setComputerId(computer.getComputerId());
-                    } else if (alreadyExist != null && !alreadyExist.isMaster()) {
-                        computerRepository.delete(alreadyExist); // Delete Slave
-                        alreadyExist = null;
-                        if (lastComputer != null && !lastComputer.getComputerId().equals(computer.getComputerId())) {
-                            lastComputer = computerRepository.findFirstByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus.ACTIVE);
-                        }
-                    }
-
-                    // If LastComputer doesn't exist
-                    if (alreadyExist == null && lastComputer == null) {
-                        computer.setMaster(true); // Set New Computer As Master
-                        computer.setPriority(topPriority); // Set as the top
-                    } else if (lastComputer != null && !lastComputer.getComputerId().equals(computer.getComputerId())) {
-                        // If last Computer is not the same as the new
-
-                        // If last computer is not active
-                        if (!isComputerActive(lastComputer)) {
-                            computer.setPriority(lastComputer.getPriority()); // Set Priority Of Last computer on new computer
-                            computer.setMaster(lastComputer.isMaster()); // Set Master as true if last was
-                            lastComputer.setPriority(computer.getPriority() + difference); // Put Last Computer at the end of the list
-
-                            if (lastComputer.isMaster()) {
-                                // Master Change Status
-                                lastComputer.setStatus(EnumComputerStatus.WARNING);
-
-                                //Save Last Master with Inactive Computer
-                                computerRepository.save(lastComputer);
-                            } else {
-                                // If Last Computer is Slave remove from repository
-                                computerRepository.delete(computer);
-                            }
-                        } else {
-                            computer.setPriority(lastComputer.getPriority() + difference);
-                        }
-
-                    }
-
-                    // Save and Return new computer
-                    computerRepository.save(computer);
-                    ComputerUtil.setComputerId(computer.getComputerId());
-                    return (ComputerModel) ConvertUtil.convert(computer, ComputerModel.class);
-
-                } else {
-                    throw new Exception(EnumError.INVALID.getValue() + " protocol");
-                }
-            } else {
-                throw new Exception(EnumError.INVALID.getValue() + " port");
-            }
-        } else {
-            throw new Exception(EnumError.INVALID.getValue() + " ip");
-        }
-
-    }
-
-    public boolean updateStatusOnDatabase(Long computerId) {
-        Computer computer = computerRepository.findComputerByActiveTrueAndComputerId(computerId);
-        if (computer != null) {
-            computer.setStatus(EnumComputerStatus.ACTIVE);
-            computer.setLastTimeAlive(new Timestamp(System.currentTimeMillis())); // Set time to now
-            computerRepository.save(computer);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean validateOtherComputers(Long computerId) {
-        Computer computer = computerRepository.findComputerByActiveTrueAndComputerId(computerId);
-        // If this computer exist on database
-        if (computer != null) {
-            List<Computer> computersToManage = computerRepository.findAllByActiveTrueAndStatusAndPriorityGreaterThanOrderByPriorityAsc(EnumComputerStatus.ACTIVE, computer.getPriority());
-
-            // If This computer isn't the latest
-            if (!computersToManage.isEmpty()) {
-                // If next computer is not active and is the last one
-                if (computersToManage.size() == 1 && !isComputerActive(computersToManage.get(0))) {
-//                    // If Last Computer Is Not Active And it's Master
-//                    if(computersToManage.get(0).isMaster()) {
-//                        computersToManage.get(0).setStatus(EnumComputerStatus.WARNING);
-//                    }
-
-                    // Remove it from database and from list
-                    computerRepository.delete(computersToManage.get(0));
-                    computersToManage.remove(0);
-                }
-            }
-
-            Computer computerTop = computerRepository.findFirstByActiveTrueAndPriorityLessThanAndStatusOrderByPriorityDesc(computer.getPriority(), EnumComputerStatus.ACTIVE);
-
-            // If This computer is not the top
-            if (computerTop != null) {
-
-                // If computer on top of this one is not active
-                if (!isComputerActive(computerTop)) {
-
-                    int lastPriority = computer.getPriority();
-                    computer.setPriority(computerTop.getPriority());
-
-                    //Move Computers Priorities And Save
-                    for (int i = 0; i < computersToManage.size(); i++) {
-                        int priority = computersToManage.get(i).getPriority();
-                        computersToManage.get(i).setPriority(lastPriority);
-                        lastPriority = priority;
-                    }
-
-                    // If top computer is master and it's down
-                    // TODO : Check Priority Change
-                    if (computerTop.isMaster() ) {
-                        computer.setMaster(true); // Set New Slave as Master
-                        computerTop.setStatus(EnumComputerStatus.WARNING); // Set Top Computer as warning, because processes cannot be ended
-
-                        // Set computer top at the end of the list
-                        computerTop.setPriority(lastPriority);
-                        computersToManage.add(computerTop);
-                    } else {
-                        computerRepository.delete(computerTop);
-                    }
-
-                    // Save All changes
-                    computersToManage.add(computer);
-                    computerRepository.saveAll(computersToManage);
-
-                } else {
-                    //If This computer Is Master and there is a higher computer
-                    if (computer.isMaster()) {
-                        // If all processes closed
-                        if (closeProcesses()) {
-                            computer.setMaster(false);
-                            computerTop.setMaster(true);
-                            computerRepository.save(computerTop);
-                        } else {
-                            // TODO : reciew this code
-                            computer.setStatus(EnumComputerStatus.WARNING);
-                            // TODO : set last priority
-                        }
-                        computerRepository.save(computer);
-                    }
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
     /* Private Methods */
+
+    // Return Computer Object
+    private Computer validateExistence(Computer computer) {
+        Computer alreadyExist = computerRepository.findComputerByActiveTrueAndIpAndPort(computer.getIp(), computer.getPort());
+
+        ComputerUtil.setComputerId(computer.getComputerId());
+        ComputerUtil.setIp(computer.getIp());
+        ComputerUtil.setPort(computer.getPort());
+
+        if (alreadyExist != null) {
+            if (alreadyExist.getStatus().equals(EnumComputerStatus.ACTIVE)) {
+                return alreadyExist;
+            }
+            if (alreadyExist.isMaster()) {
+                // If can't close all processes
+                if (!closeProcesses()) {
+                    // TODO : IF can't close all processes
+                    Log.error("Cannot close all processes");
+                }
+            }
+            computerRepository.delete(alreadyExist); // Remove it from database
+        }
+
+        return computer;
+    }
+
+    private Computer createComputer(Computer computer) {
+        // Get last computer active
+        Computer lastComputer = computerRepository.findFirstByActiveTrueAndStatusOrderByPriorityAsc(EnumComputerStatus.ACTIVE);
+
+        if (lastComputer != null) {
+            computer.setMaster(false);
+            computer.setPriority(lastComputer.getPriority() + difference);
+        } else {
+            computer.setMaster(true);
+            computer.setPriority(topPriority);
+        }
+
+        computerRepository.save(computer); // Save on Database
+
+        return computer;
+    }
+
+    private Computer validateMyStatus(Computer thisComputer) {
+        int thisComputerPriority = thisComputer.getPriority();
+        Computer mostImportantComputer = computerRepository.findFirstByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus.ACTIVE);
+
+        thisComputer.setLastTimeAlive(new Timestamp(System.currentTimeMillis()));
+        thisComputer.setStatus(EnumComputerStatus.ACTIVE);
+
+        // If this computer is the most important / Master
+        if (mostImportantComputer.getPriority() == thisComputerPriority) {
+            thisComputer.setMaster(true);
+            startAndCheckProcesses(thisComputer);
+        } else {
+            // If This computer was the master
+            if (thisComputer.isMaster()) {
+                if (!closeProcesses()) {
+                    // TODO : IF can't close all processes
+                    Log.error("Cannot Close Processes");
+                } else {
+                    thisComputer.setMaster(false);
+                }
+            }
+        }
+
+        computerRepository.save(thisComputer);
+
+        return thisComputer;
+    }
+
+    private Computer validateTopConnection(Computer thisComputer) {
+        List<Computer> computers = computerRepository.findAllByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus.ACTIVE);
+
+        if (!computers.isEmpty()) {
+            int thisComputerIndex = -1;
+            for (int i = 0; i < computers.size(); i++) {
+                if (computers.get(i).getComputerId().equals(thisComputer.getComputerId())) {
+                    thisComputer = computers.get(i);
+                    thisComputerIndex = i;
+                }
+            }
+
+            if (computers.size() > 1) {
+                // If this computer is not master
+                if (thisComputerIndex > 0) {
+                    int topComputerIndex = thisComputerIndex - 1;
+                    if (!isComputerActive(computers.get(topComputerIndex))) {
+
+                        for (int i = thisComputerIndex; i < computers.size(); i++) {
+                            int lastPriority = computers.get(i - 1).getPriority();
+                            computers.get(i - 1).setPriority(computers.get(i).getPriority());
+                            computers.get(i).setPriority(lastPriority);
+                        }
+
+                        // If Top Computer is Master
+                        if (topComputerIndex == 0) {
+                            computers.get(topComputerIndex).setStatus(EnumComputerStatus.WARNING);
+                        } else {
+                            computers.get(topComputerIndex).setStatus(EnumComputerStatus.SHUTDOWN);
+                        }
+                    }
+                }
+                //TODO : Add method to check if all slaves are not dead
+            }
+            return computers.get(thisComputerIndex);
+        }
+        return thisComputer;
+    }
+
+    private void startAndCheckProcesses(Computer computer) {
+        List<Command> commands = commandRepository.findAllByActiveTrue();
+
+        for (Command command : commands) {
+            if (!isThisCommandRunning(computer, command)) {
+                java.lang.Process process = null;
+                try {
+                    process = Runtime.getRuntime().exec(command.getCommand());
+                    ReaderThreadUtil readerThread = new ReaderThreadUtil(process, command.getName(), commandPath);
+                    readerThread.start();
+
+                    Process p = new Process();
+                    p.setPid(process.pid());
+                    p.setComputer(computer);
+                    p.setCommand(command);
+
+                    processRepository.save(p);
+                } catch (IOException e) {
+                    Log.error("Error To Execute Command");
+                }
+            }
+        }
+
+    }
+
+    private boolean isThisCommandRunning(Computer computer, Command command) {
+        List<Process> processes = command.getProcesses();
+        for (Process process : processes) {
+            if (process.getComputer().getComputerId().equals(computer.getComputerId()) && process.getCommand().getCommandId().equals(command.getCommandId())) {
+                Optional<ProcessHandle> optionalProcessHandle = ProcessHandle.of(process.getPid());
+                if(optionalProcessHandle.isPresent()) {
+                    return true;
+                } else {
+                    processRepository.delete(process);
+                }
+            }
+        }
+        return false;
+    }
 
     // Return false if all processes not close
     private boolean closeProcesses() {
@@ -222,7 +254,7 @@ public class ComputerService {
         // If There is processes not closed on this computer
         if (!processes.isEmpty()) {
             for (Process process : processes) {
-                int pid = process.getPid();
+                Long pid = process.getPid();
 
                 // Get Property
                 Optional<ProcessHandle> optionalProcessHandle = ProcessHandle.of(pid);
@@ -233,21 +265,21 @@ public class ComputerService {
                     // If process doesn't end
                     if (!processHandle.destroy()) {
                         if (processHandle.destroyForcibly()) {
-                            process.setStatus(EnumProcessStatus.STOPPED);
-                            process.setActive(false);
+                            processRepository.delete(process);
+                            processes.remove(process);
                         } else {
                             Log.error("Process " + pid + " cannot end, please validate");
                             status = false;
                             process.setStatus(EnumProcessStatus.WARNING);
                         }
                     } else {
-                        process.setStatus(EnumProcessStatus.STOPPED);
-                        process.setActive(false);
+                        processRepository.delete(process);
+                        processes.remove(process);
                     }
                 } else {
                     // If Process Not Found
-                    process.setStatus(EnumProcessStatus.STOPPED);
-                    process.setActive(false);
+                    processRepository.delete(process);
+                    processes.remove(process);
                 }
             }
 
@@ -265,11 +297,7 @@ public class ComputerService {
 
         // If Computer dont check the time in database
         if (computerTime == null || time.after(computerTime)) {
-//            Simulate deactivate computer
-            Random random = new Random();
-            boolean isActive = random.nextInt(2) != 0;
-            return isActive;
-//            return availablePort(computer.getIp(), computer.getPort(), ComputerUtil.getTimeoutTime()); TODO uncomment
+            return availablePort(computer.getIp(), computer.getPort(), ComputerUtil.getTimeoutTime());
         }
         return true;
 
@@ -294,6 +322,5 @@ public class ComputerService {
         }
         return false;
     }
-
 
 }

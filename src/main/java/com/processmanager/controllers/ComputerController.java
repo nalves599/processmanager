@@ -4,7 +4,6 @@ import com.processmanager.models.ComputerModel;
 import com.processmanager.models.GenericResponseModel;
 import com.processmanager.models.requests.ComputerModelRequest;
 import com.processmanager.services.ComputerService;
-import com.processmanager.utils.ComputerUtil;
 import com.processmanager.utils.GenericResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,7 +30,7 @@ public class ComputerController {
     @PostMapping
     public GenericResponseModel create(@RequestBody ComputerModelRequest computerModelRequest){
         try {
-            ComputerModel computerModel = computerService.add(computerModelRequest);
+            ComputerModel computerModel = computerService.run(computerModelRequest);
 
             return GenericResponseUtil.ok(computerModel);
         } catch (Exception e) {
@@ -39,11 +38,10 @@ public class ComputerController {
         }
     }
 
-    @GetMapping("/status")
+    @GetMapping("/force")
     public GenericResponseModel status(){
         try {
-           computerService.validateOtherComputers(ComputerUtil.getComputerId());
-            return GenericResponseUtil.ok(null);
+            return GenericResponseUtil.ok(computerService.start());
         } catch (Exception e) {
             return GenericResponseUtil.setError(HttpStatus.NOT_ACCEPTABLE.value(), e.getMessage());
         }

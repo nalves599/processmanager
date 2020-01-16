@@ -15,26 +15,20 @@ public class Process {
     private Long processId;
 
     @Column(name = "ACTIVE")
-    private boolean active;
-
-    @Column(name = "NAME")
-    private String name;
+    private boolean active = true;
 
     @Column(name = "PID", nullable = false)
-    private int pid;
-
-    @Column(name = "STARTED_AT")
-    private Date startedAt;
+    private Long pid;
 
     @Column(name = "STATUS")
     @Enumerated(EnumType.STRING)
     private EnumProcessStatus status = EnumProcessStatus.RUNNING;
 
-    @ManyToOne(targetEntity = Computer.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(targetEntity = Computer.class, fetch = FetchType.EAGER)
     @JoinColumn(name = "COMPUTER", referencedColumnName = "COMPUTER_ID")
     private Computer computer;
 
-    @ManyToOne(targetEntity = Command.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(targetEntity = Command.class, fetch = FetchType.EAGER)
     @JoinColumn(name = "COMMAND", referencedColumnName = "COMMAND_ID")
     private Command command;
 
@@ -57,29 +51,14 @@ public class Process {
         this.active = active;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getPid() {
+    public Long getPid() {
         return pid;
     }
 
-    public void setPid(int pid) {
+    public void setPid(Long pid) {
         this.pid = pid;
     }
 
-    public Date getStartedAt() {
-        return startedAt;
-    }
-
-    public void setStartedAt(Date startedAt) {
-        this.startedAt = startedAt;
-    }
 
     public Computer getComputer() {
         return computer;

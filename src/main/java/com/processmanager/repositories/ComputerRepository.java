@@ -15,22 +15,22 @@ public interface ComputerRepository extends JpaRepository<Computer, Long> {
 
     List<Computer> findAllByActiveTrue();
 
-    List<Computer> findAllByActiveTrueAndStatus(EnumComputerStatus status);
+    List<Computer> findAllByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus status);
 
     // Get All Computers Where Priority Value is Greater
-    List<Computer> findAllByActiveTrueAndStatusAndPriorityGreaterThanOrderByPriorityAsc( EnumComputerStatus status, int priority);
+    List<Computer> findAllByActiveTrueAndStatusAndPriorityLessThanOrderByPriorityDesc(EnumComputerStatus status, int priority);
 
     // Get The first Computer where the priority is greater than this one
-    Computer findFirstByActiveTrueAndPriorityLessThanAndStatusOrderByPriorityDesc( int priority, EnumComputerStatus status);
+    Computer findFirstByActiveTrueAndPriorityGreaterThanAndStatusOrderByPriorityAsc(int priority, EnumComputerStatus status);
 
     // Get Computer by Id
     Computer findComputerByActiveTrueAndComputerId(Long computerId);
 
     // Get Most Important Computer
-    Computer findFirstByActiveTrueOrderByPriorityAsc();
+    Computer findFirstByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus status);
 
     // Get Less Important Computer
-    Computer findFirstByActiveTrueAndStatusOrderByPriorityDesc(EnumComputerStatus status);
+    Computer findFirstByActiveTrueAndStatusOrderByPriorityAsc(EnumComputerStatus status);
 
     // Get Computer With the same host and port
     Computer findComputerByActiveTrueAndIpAndPort(String ip, int port);
