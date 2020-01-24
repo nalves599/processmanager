@@ -3,7 +3,6 @@ package com.processmanager.entities;
 import com.processmanager.enums.EnumProcessStatus;
 
 import javax.persistence.*;
-import java.util.Date;
 
 @Entity
 @Table(name = "PROCESS")
@@ -11,7 +10,7 @@ public class Process {
 
     @Id
     @Column(name = "PROCESS_ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "process_sequence")
     private Long processId;
 
     @Column(name = "ACTIVE")

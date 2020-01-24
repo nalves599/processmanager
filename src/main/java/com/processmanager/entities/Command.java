@@ -1,7 +1,6 @@
 package com.processmanager.entities;
 
 import javax.persistence.*;
-import javax.validation.constraints.Min;
 import java.util.List;
 
 @Entity

@@ -18,7 +18,6 @@ public class ComputerValidationScheduller {
     @Scheduled(fixedDelayString = "${computer.validate-time}") //60 seconds
     private void validateMachine() {
         computerService.start();
-
     }
 
     /* Private Methods */
